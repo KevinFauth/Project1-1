@@ -25,17 +25,46 @@ function getDays() {
 
 //Get content from local storage and display on screen
 function init() {
-    if (localStorage.getItem("savedInfo") === null) {
-        return;
-    } else {
+    if (localStorage.getItem("savedInfo")) {
         savedInfo = JSON.parse(localStorage.getItem("savedInfo"));
-        //for (var i=0; i < savedInfo.length; i++) {
-         //   var returnTask = savedInfo[i].task;
-         //   var returnTime = "#"+savedInfo[i].hour;
-         //   $(returnTime).children(".description").val(returnTask);
-        //}
-        return savedInfo;
     }
+
+    // run search on query string
+    var savedCity = getSearchFromURL();
+
+    if (savedCity) {
+        searchTextEl.value = savedCity;
+        getGeo()
+    }
+
+    // listen for state on back button click
+    window.addEventListener("popstate", function (event) {
+        event.preventDefault();
+
+        var savedCity = getSearchFromURL(event);
+
+        if (savedCity) {
+            searchTextEl.value = savedCity
+        }
+        getGeo()
+    });
+}
+
+function getSearchFromURL(event) {
+    if (event) {
+        event.preventDefault();
+    }
+
+    // get search params
+    var searchQuery = new URLSearchParams(window.location.search)
+
+    // check if an event is in the URL
+    if (searchQuery.has("event")) {
+        // get event name and show it on screen
+        return searchQuery.get("event")
+    }
+
+    return false
 }
 
 //Turn saved info into city buttons
@@ -51,7 +80,10 @@ function makeButtonsFromSaved() {
 //Take in a city name and get the lat/lon
 
 function getGeo(event) {
-    event.preventDefault();
+    if (event) {
+        event.preventDefault();
+    }
+
     var city = searchText.value.toUpperCase();
 
     var geoSpec = weatherBase + "/geo/1.0/direct?q=" + city + "&limit=1&appid=" + apiKey;
@@ -134,7 +166,12 @@ function getCurrentWeather(cityInfo) {
                 humidityiEl.textContent = data.daily[i].humidity;
 
             }
-            
+
+            // save to url if it's changed
+            if (cityInfo.city !== getSearchFromURL()) {
+                var pageUrl = '?event=' + window.encodeURIComponent(cityInfo.city);
+                window.history.pushState('', '', pageUrl);
+            }
         })
 }
 
